@@ -18,7 +18,6 @@ DISPLAY_TITLE = r"""
 ChRIS Plugin Template Title
 """
 
-
 parser = ArgumentParser(description='!!!CHANGE ME!!! An example ChRIS plugin which '
                                     'counts the number of occurrences of a given '
                                     'word in text files.',
@@ -38,10 +37,10 @@ parser.add_argument('-V', '--version', action='version',
 @chris_plugin(
     parser=parser,
     title='My ChRIS plugin',
-    category='',                 # ref. https://chrisstore.co/plugins
-    min_memory_limit='100Mi',    # supported units: Mi, Gi
-    min_cpu_limit='1000m',       # millicores, e.g. "1000m" = 1 CPU core
-    min_gpu_limit=0              # set min_gpu_limit=1 to enable GPU
+    category='',  # ref. https://chrisstore.co/plugins
+    min_memory_limit='100Mi',  # supported units: Mi, Gi
+    min_cpu_limit='1000m',  # millicores, e.g. "1000m" = 1 CPU core
+    min_gpu_limit=0  # set min_gpu_limit=1 to enable GPU
 )
 def main(options: Namespace, inputdir: Path, outputdir: Path):
     """
@@ -71,8 +70,19 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
         data = input_file.read_text()
         frequency = data.count(options.word)
         output_file.write_text(str(frequency))
-        
-def run(self):
+
+
+if __name__ == '__main__':
+    main()
+
+
+    def __init__(self):
+        self.PNG = False
+        self.dcm_folder_path = "/home/sandip/test_zone/us_dcms/level1/level2/level3"
+        self.img_folder_path = "/home/sandip/test_zone/us_dcms_pngs"
+
+
+    def run(self):
         images_path = os.listdir(self.dcm_folder_path)  # list of attributes available in dicom image
         for n, image in enumerate(images_path):
             dicom_file = read_dicom(os.path.join(self.dcm_folder_path, image))
@@ -84,8 +94,9 @@ def run(self):
             else:
                 self.save_as_image(dicom_file, image)
 
-def split_dicom_multiframe(self, dicom_data_set, image):
-        image = image.replace('.dcm','')
+
+    def split_dicom_multiframe(self, dicom_data_set, image):
+        image = image.replace('.dcm', '')
         dir_path = os.path.join(self.img_folder_path, str(image))
         os.makedirs(dir_path, exist_ok=True)
 
@@ -94,14 +105,16 @@ def split_dicom_multiframe(self, dicom_data_set, image):
             op_dcm_path = os.path.join(dir_path, f'slice_{i:03n}.dcm')
             dicom_data_set.save_as(op_dcm_path)
 
-def save_as_image(self, dicom_data_set, image):
+
+    def save_as_image(self, dicom_data_set, image):
         if not self.PNG:
             image = image.replace('.dcm', '.jpg')
         else:
             image = image.replace('.dcm', '.png')
         image_arr = dicom_data_set.pixel_array
         cv2.imwrite(os.path.join(self.img_folder_path, image), image_arr)
-        
+
+
 def read_dicom(dicom_path):
     dataset = None
     try:
@@ -109,7 +122,3 @@ def read_dicom(dicom_path):
     except Exception as ex:
         print(dicom_path, ex)
     return dataset
-
-
-if __name__ == '__main__':
-    main()
