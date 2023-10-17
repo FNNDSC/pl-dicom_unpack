@@ -22,9 +22,9 @@ parser = ArgumentParser(description='!!!CHANGE ME!!! An example ChRIS plugin whi
                                     'counts the number of occurrences of a given '
                                     'word in text files.',
                         formatter_class=ArgumentDefaultsHelpFormatter)
-parser.add_argument('-w', '--word', required=True, type=str,
-                    help='word to count')
-parser.add_argument('-p', '--pattern', default='**/*.txt', type=str,
+parser.add_argument('-f', '--fileFilter', default='dcm', type=str,
+                    help='input file filter glob')
+parser.add_argument('-t', '--outputType', default='dcm', type=str,
                     help='input file filter glob')
 parser.add_argument('-V', '--version', action='version',
                     version=f'%(prog)s {__version__}')
@@ -62,57 +62,27 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     #
     # Refer to the documentation for more options, examples, and advanced uses e.g.
     # adding a progress bar and parallelism.
-    mapper = PathMapper.file_mapper(inputdir, outputdir, glob=options.pattern, suffix='.count.txt')
+    mapper = PathMapper.file_mapper(inputdir, outputdir, glob=f"**/*.{options.fileFilter}")
     for input_file, output_file in mapper:
-        # The code block below is a small and easy example of how to use a ``PathMapper``.
-        # It is recommended that you put your functionality in a helper function, so that
-        # it is more legible and can be unit tested.
-        data = input_file.read_text()
-        frequency = data.count(options.word)
-        output_file.write_text(str(frequency))
+        dicom_file = read_dicom(str(input_file))
+        if dicom_file is None:
+            continue
+        split_dicom_multiframe(dicom_file, input_file.name,output_file)
+
 
 
 if __name__ == '__main__':
     main()
 
+def split_dicom_multiframe(dicom_data_set, image, output_file):
+    image = image.replace('.dcm', '')
+    dir_path = os.path.join(str(output_file))
+    os.makedirs(dir_path, exist_ok=True)
 
-    def __init__(self):
-        self.PNG = False
-        self.dcm_folder_path = "/home/sandip/test_zone/us_dcms/level1/level2/level3"
-        self.img_folder_path = "/home/sandip/test_zone/us_dcms_pngs"
-
-
-    def run(self):
-        images_path = os.listdir(self.dcm_folder_path)  # list of attributes available in dicom image
-        for n, image in enumerate(images_path):
-            dicom_file = read_dicom(os.path.join(self.dcm_folder_path, image))
-            if dicom_file is None:
-                continue
-            print(dicom_file.data_element("SOPClassUID"))
-            if "Multi-frame" in str(dicom_file.data_element("SOPClassUID")):
-                self.split_dicom_multiframe(dicom_file, image)
-            else:
-                self.save_as_image(dicom_file, image)
-
-
-    def split_dicom_multiframe(self, dicom_data_set, image):
-        image = image.replace('.dcm', '')
-        dir_path = os.path.join(self.img_folder_path, str(image))
-        os.makedirs(dir_path, exist_ok=True)
-
-        for i, slice in enumerate(dicom_data_set.pixel_array):
-            dicom_data_set.PixelData = slice
-            op_dcm_path = os.path.join(dir_path, f'slice_{i:03n}.dcm')
-            dicom_data_set.save_as(op_dcm_path)
-
-
-    def save_as_image(self, dicom_data_set, image):
-        if not self.PNG:
-            image = image.replace('.dcm', '.jpg')
-        else:
-            image = image.replace('.dcm', '.png')
-        image_arr = dicom_data_set.pixel_array
-        cv2.imwrite(os.path.join(self.img_folder_path, image), image_arr)
+    for i, slice in enumerate(dicom_data_set.pixel_array):
+        dicom_data_set.PixelData = slice
+        op_dcm_path = os.path.join(dir_path, f'slice_{i:03n}.dcm')
+        dicom_data_set.save_as(op_dcm_path)
 
 
 def read_dicom(dicom_path):
