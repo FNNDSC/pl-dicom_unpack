@@ -5,11 +5,7 @@ from argparse import ArgumentParser, Namespace, ArgumentDefaultsHelpFormatter
 
 from chris_plugin import chris_plugin, PathMapper
 import pydicom as dicom
-import matplotlib.pyplot as plt
 import os
-import cv2
-import PIL  # optional
-import pandas as pd
 import csv
 
 __version__ = '1.0.0'
