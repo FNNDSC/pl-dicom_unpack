@@ -11,12 +11,17 @@ import csv
 __version__ = '1.0.0'
 
 DISPLAY_TITLE = r"""
-ChRIS Plugin Template Title
+       _           _ _                                                   _    
+      | |         | (_)                                                 | |   
+ _ __ | |______ __| |_  ___ ___  _ __ ___   _   _ _ __  _ __   __ _  ___| | __
+| '_ \| |______/ _` | |/ __/ _ \| '_ ` _ \ | | | | '_ \| '_ \ / _` |/ __| |/ /
+| |_) | |     | (_| | | (_| (_) | | | | | || |_| | | | | |_) | (_| | (__|   < 
+| .__/|_|      \__,_|_|\___\___/|_| |_| |_| \__,_|_| |_| .__/ \__,_|\___|_|\_\
+| |                                     ______         | |                    
+|_|                                    |______|        |_|                    
 """
 
-parser = ArgumentParser(description='!!!CHANGE ME!!! An example ChRIS plugin which '
-                                    'counts the number of occurrences of a given '
-                                    'word in text files.',
+parser = ArgumentParser(description='A ChRIS plugin to unpack individual dicom slices from a volume dicom file',
                         formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument('-f', '--fileFilter', default='dcm', type=str,
                     help='input file filter glob')
