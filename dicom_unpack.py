@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from argparse import ArgumentParser, Namespace, ArgumentDefaultsHelpFormatter
-
+import numpy as np
 from chris_plugin import chris_plugin, PathMapper
 import pydicom as dicom
 import os
