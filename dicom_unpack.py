@@ -8,7 +8,7 @@ import pydicom as dicom
 import os
 import csv
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -19,14 +19,14 @@ DISPLAY_TITLE = r"""
 | .__/|_|      \__,_|_|\___\___/|_| |_| |_| \__,_|_| |_| .__/ \__,_|\___|_|\_\
 | |                                     ______         | |                    
 |_|                                    |______|        |_|                    
-"""
+""" + "\t\t -- version " + __version__ + " --\n\n"
 
 parser = ArgumentParser(description='A ChRIS plugin to unpack individual dicom slices from a volume dicom file',
                         formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument('-f', '--fileFilter', default='dcm', type=str,
                     help='input file filter glob')
 parser.add_argument('-t', '--outputType', default='dcm', type=str,
-                    help='input file filter glob')
+                    help='output file type')
 parser.add_argument('-V', '--version', action='version',
                     version=f'%(prog)s {__version__}')
 
@@ -37,7 +37,7 @@ parser.add_argument('-V', '--version', action='version',
 # documentation: https://fnndsc.github.io/chris_plugin/chris_plugin.html#chris_plugin
 @chris_plugin(
     parser=parser,
-    title='My ChRIS plugin',
+    title='A ChRIS plugin to unpack multi-frame dicom file to individual slices',
     category='',  # ref. https://chrisstore.co/plugins
     min_memory_limit='100Mi',  # supported units: Mi, Gi
     min_cpu_limit='1000m',  # millicores, e.g. "1000m" = 1 CPU core
@@ -68,25 +68,34 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
         dicom_file = read_dicom(str(input_file))
         if dicom_file is None:
             continue
-        split_dicom_multiframe(dicom_file, input_file.name,output_file)
+        split_dicom_multiframe(dicom_file, output_file)
 
 
 
 if __name__ == '__main__':
     main()
 
-def split_dicom_multiframe(dicom_data_set, image, output_file):
-    image = image.replace('.dcm', '')
-    dir_path = os.path.join(str(output_file))
+def split_dicom_multiframe(dicom_data_set, output_file):
+    """
+    A method to split a 3D dicom file to individual 2D dicom
+    slices
+    """
+    dir_path = str(output_file).replace('.dcm', '')
+    print(f"Creating o/p directory: {dir_path}")
     os.makedirs(dir_path, exist_ok=True)
 
     for i, slice in enumerate(dicom_data_set.pixel_array):
         dicom_data_set.PixelData = slice
         op_dcm_path = os.path.join(dir_path, f'slice_{i:03n}.dcm')
+        print(f"Saving file : -->slice_{i:03n}.dcm<--")
         dicom_data_set.save_as(op_dcm_path)
 
 
-def read_dicom(dicom_path):
+def read_dicom(dicom_path:str):
+    """
+    A method to read a dicom file and return the dicom dataset
+    """
+    print(f"Reading dicom file : -->{dicom_path}<--")
     dataset = None
     try:
         dataset = dicom.dcmread(dicom_path)
