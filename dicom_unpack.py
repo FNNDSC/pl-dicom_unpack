@@ -8,7 +8,7 @@ import pydicom as dicom
 import os
 import csv
 
-__version__ = '1.0.0'
+__version__ = '0.2.0'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
