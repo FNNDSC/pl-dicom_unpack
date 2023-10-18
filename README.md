@@ -1,4 +1,4 @@
-# My ChRIS Plugin
+# pl-dicom_unpack
 
 [![Version](https://img.shields.io/docker/v/fnndsc/pl-dicom_unpack?sort=semver)](https://hub.docker.com/r/fnndsc/pl-dicom_unpack)
 [![MIT License](https://img.shields.io/github/license/fnndsc/pl-dicom_unpack)](https://github.com/FNNDSC/pl-dicom_unpack/blob/main/LICENSE)
