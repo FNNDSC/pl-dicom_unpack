@@ -24,7 +24,7 @@ setup(
     description='A ChRIS plugin to do something awesome',
     author='FNNDSC',
     author_email='dev@babyMRI.org',
-    url='https://github.com/FNNDSC/pl-dicom_un',
+    url='https://github.com/FNNDSC/pl-dicom_unpack',
     py_modules=['dicom_unpack'],
     install_requires=['chris_plugin'],
     license='MIT',
