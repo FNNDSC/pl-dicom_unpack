@@ -8,7 +8,7 @@ import pydicom as dicom
 import os
 import csv
 
-__version__ = '0.2.5'
+__version__ = '0.2.7'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -85,7 +85,9 @@ def split_dicom_multiframe(dicom_data_set, output_file):
     os.makedirs(dir_path, exist_ok=True)
 
     for i, slice in enumerate(dicom_data_set.pixel_array):
-        dicom_data_set.PixelData = slice.tobytes()
+        dicom_data_set.PixelData = slice
+        print(slice.shape)
+        print(len(slice.tobytes()))
         dicom_data_set.NumberOfFrames = 1
         op_dcm_path = os.path.join(dir_path, f'slice_{i:03n}.dcm')
         print(f"Saving file : -->slice_{i:03n}.dcm<--")
