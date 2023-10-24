@@ -5,12 +5,13 @@
 [![ci](https://github.com/FNNDSC/pl-dicom_unpack/actions/workflows/ci.yml/badge.svg)](https://github.com/FNNDSC/pl-dicom_unpack/actions/workflows/ci.yml)
 
 `pl-dicom_unpack` is a [_ChRIS_](https://chrisproject.org/)
-_ds_ plugin which takes in ...  as input files and
-creates ... as output files.
+_ds_ plugin which takes in a single "multi-frame" DICOM as input file and unpacks it into a 
+series of individual dicom files.
 
 ## Abstract
 
-...
+This plugin is a simple app to unpack a "multi-frame" dicom into a list of 
+individual dicom slices.
 
 ## Installation
 
