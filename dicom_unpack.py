@@ -7,8 +7,9 @@ from chris_plugin import chris_plugin, PathMapper
 import pydicom as dicom
 import os
 import csv
+from pflog import pflog
 
-__version__ = '1.0.1'
+__version__ = '1.1.0'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -42,6 +43,10 @@ parser.add_argument('-V', '--version', action='version',
     min_memory_limit='2Gi',  # supported units: Mi, Gi
     min_cpu_limit='10000m',  # millicores, e.g. "1000m" = 1 CPU core
     min_gpu_limit=0  # set min_gpu_limit=1 to enable GPU
+)
+@pflog.tel_logTime(
+            event       = 'dicom_repack',
+            log         = 'Repack slices of dicoms into one'
 )
 def main(options: Namespace, inputdir: Path, outputdir: Path):
     """
@@ -85,7 +90,7 @@ def split_dicom_multiframe(dicom_data_set, output_file):
     os.makedirs(dir_path, exist_ok=True)
 
     for i, slice in enumerate(dicom_data_set.pixel_array):
-        dicom_data_set.PixelData = slice
+        dicom_data_set.PixelData = slice.tobytes()
         dicom_data_set.NumberOfFrames = 1
         op_dcm_path = os.path.join(dir_path, f'slice_{i:03n}.dcm')
         print(f"Saving file : -->slice_{i:03n}.dcm<--")
