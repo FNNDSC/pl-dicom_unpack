@@ -8,8 +8,8 @@ import pydicom as dicom
 import os
 import csv
 from pflog import pflog
-
-__version__ = '1.1.0'
+from pftag import pftag
+__version__ = '1.1.2'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -30,6 +30,11 @@ parser.add_argument('-t', '--outputType', default='dcm', type=str,
                     help='output file type')
 parser.add_argument('-V', '--version', action='version',
                     version=f'%(prog)s {__version__}')
+parser.add_argument(  '--pftelDB',
+                    dest        = 'pftelDB',
+                    default     = '',
+                    type        = str,
+                    help        = 'optional pftel server DB path')
 
 
 # The main function of this *ChRIS* plugin is denoted by this ``@chris_plugin`` "decorator."
@@ -41,12 +46,12 @@ parser.add_argument('-V', '--version', action='version',
     title='A ChRIS plugin to unpack multi-frame dicom file to individual slices',
     category='',  # ref. https://chrisstore.co/plugins
     min_memory_limit='2Gi',  # supported units: Mi, Gi
-    min_cpu_limit='10000m',  # millicores, e.g. "1000m" = 1 CPU core
+    min_cpu_limit='2000m',  # millicores, e.g. "1000m" = 1 CPU core
     min_gpu_limit=0  # set min_gpu_limit=1 to enable GPU
 )
 @pflog.tel_logTime(
-            event       = 'dicom_repack',
-            log         = 'Repack slices of dicoms into one'
+            event       = 'dicom_unpack',
+            log         = 'Unpack dicom slices from a single multiframe dicom'
 )
 def main(options: Namespace, inputdir: Path, outputdir: Path):
     """
@@ -60,7 +65,6 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     """
 
     print(DISPLAY_TITLE)
-
     # Typically it's easier to think of programs as operating on individual files
     # rather than directories. The helper functions provided by a ``PathMapper``
     # object make it easy to discover input files and write to output files inside
@@ -74,7 +78,6 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
         if dicom_file is None:
             continue
         split_dicom_multiframe(dicom_file, output_file)
-
 
 
 if __name__ == '__main__':
