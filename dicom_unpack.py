@@ -9,7 +9,9 @@ import os
 import csv
 from pflog import pflog
 from pftag import pftag
-__version__ = '1.1.4'
+import sys, traceback
+import pudb
+__version__ = '1.1.6'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -72,17 +74,13 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     #
     # Refer to the documentation for more options, examples, and advanced uses e.g.
     # adding a progress bar and parallelism.
-    try:
-        mapper = PathMapper.file_mapper(inputdir, outputdir, glob=f"**/*.{options.fileFilter}")
-    except Exception as ex:
-        print(ex)
-        sys.exit()
+    #pudb.set_trace()
+    mapper = PathMapper.file_mapper(inputdir, outputdir, glob=f"**/*.{options.fileFilter}",fail_if_empty=False)
     for input_file, output_file in mapper:
         dicom_file = read_dicom(str(input_file))
         if dicom_file is None:
             continue
         split_dicom_multiframe(dicom_file, output_file)
-
 
 if __name__ == '__main__':
     main()
