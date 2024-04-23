@@ -11,7 +11,7 @@ from pflog import pflog
 from pftag import pftag
 import sys, traceback
 import pudb
-__version__ = '1.1.6'
+__version__ = '1.1.8'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
