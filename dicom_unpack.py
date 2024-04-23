@@ -12,7 +12,7 @@ from pftag import pftag
 import sys, traceback
 import pudb
 from pydicom.uid            import ExplicitVRLittleEndian
-__version__ = '1.2.4'
+__version__ = '1.2.6'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -94,11 +94,11 @@ def split_dicom_multiframe(dicom_data_set, output_file):
     dir_path = str(output_file).replace('.dcm', '')
     print(f"Creating o/p directory: {dir_path}")
     os.makedirs(dir_path, exist_ok=True)
-
+    dicom_data_set.decompress()
     for i, slice in enumerate(dicom_data_set.pixel_array):
         dicom_data_set.PixelData = slice.tobytes()
+        dicom_data_set.PhotometricInterpretation = "YBR_FULL"
         dicom_data_set.NumberOfFrames = 1
-        dicom_data_set.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
         op_dcm_path = os.path.join(dir_path, f'slice_{i:03n}.dcm')
         print(f"Saving file : -->slice_{i:03n}.dcm<--")
         dicom_data_set.save_as(op_dcm_path)
