@@ -11,7 +11,7 @@ from pflog import pflog
 from pftag import pftag
 import sys, traceback
 import pudb
-__version__ = '1.1.8'
+__version__ = '1.1.9'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -47,7 +47,7 @@ parser.add_argument(  '--pftelDB',
     parser=parser,
     title='A ChRIS plugin to unpack multi-frame dicom file to individual slices',
     category='',  # ref. https://chrisstore.co/plugins
-    min_memory_limit='2Gi',  # supported units: Mi, Gi
+    min_memory_limit='8Gi',  # supported units: Mi, Gi
     min_cpu_limit='2000m',  # millicores, e.g. "1000m" = 1 CPU core
     min_gpu_limit=0  # set min_gpu_limit=1 to enable GPU
 )
