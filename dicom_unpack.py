@@ -12,7 +12,7 @@ from pftag import pftag
 import sys, traceback
 import pudb
 from pydicom.uid            import ExplicitVRLittleEndian
-__version__ = '1.3.1'
+__version__ = '1.3.2'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
