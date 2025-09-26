@@ -6,13 +6,11 @@ import numpy as np
 from chris_plugin import chris_plugin, PathMapper
 import pydicom as dicom
 import os
-import csv
 from pflog import pflog
 from pftag import pftag
-import sys, traceback
-import pudb
-from pydicom.uid            import ExplicitVRLittleEndian
-__version__ = '1.3.2'
+from    jobController       import jobber
+
+__version__ = '1.3.3'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -75,7 +73,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     #
     # Refer to the documentation for more options, examples, and advanced uses e.g.
     # adding a progress bar and parallelism.
-    #pudb.set_trace()
+
     mapper = PathMapper.file_mapper(inputdir, outputdir, glob=f"**/*.{options.fileFilter}",fail_if_empty=False)
     for input_file, output_file in mapper:
         dicom_file = read_dicom(str(input_file))
@@ -94,7 +92,6 @@ def split_dicom_multiframe(dicom_data_set, output_file):
     dir_path = str(output_file).replace('.dcm', '')
     print(f"Creating o/p directory: {dir_path}")
     os.makedirs(dir_path, exist_ok=True)
-    dicom_data_set.decompress()
     for i, slice in enumerate(dicom_data_set.pixel_array):
         dicom_data_set.PixelData = slice.tobytes()
         # specifically handle compressed dicoms with YBR_FULL_422 PI
@@ -105,15 +102,36 @@ def split_dicom_multiframe(dicom_data_set, output_file):
         print(f"Saving file : -->slice_{i:03n}.dcm<--")
         dicom_data_set.save_as(op_dcm_path)
 
-
 def read_dicom(dicom_path:str):
     """
     A method to read a dicom file and return the dicom dataset
     """
     print(f"Reading dicom file : -->{dicom_path}<--")
     dataset = None
+    tmp_decompressed_path = decompress_dicom(dicom_path)
     try:
-        dataset = dicom.dcmread(dicom_path)
+        dataset = dicom.dcmread(tmp_decompressed_path)
     except Exception as ex:
-        print(dicom_path, ex)
+        print(tmp_decompressed_path, ex)
     return dataset
+
+def decompress_dicom(dicom_path: str):
+    """
+    Decompress a DICOM file using `dcmdjpeg` command found in `dcmtk` library
+    """
+    tmp_path = f"/tmp/decompressed.dcm"
+    print(f"Decompressing DICOM as {tmp_path}")
+    shell = jobber({'verbosity': 1, 'noJobLogging': True})
+    str_cmd = (f"dcmdjpeg"
+               f" {dicom_path}"
+               f" {tmp_path}")
+
+    d_response = shell.job_run(str_cmd)
+    print(f"Command: {d_response['cmd']}")
+    if d_response['returncode']:
+        print(f"Error: {d_response['stderr']}")
+        raise Exception(d_response["stderr"])
+    else:
+        print("Response: File decompressed successfully.")
+
+    return tmp_path

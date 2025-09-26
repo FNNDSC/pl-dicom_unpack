@@ -25,7 +25,7 @@ setup(
     author='FNNDSC',
     author_email='dev@babyMRI.org',
     url='https://github.com/FNNDSC/pl-dicom_unpack',
-    py_modules=['dicom_unpack'],
+    py_modules=['dicom_unpack', 'jobController'],
     install_requires=['chris_plugin'],
     license='MIT',
     entry_points={
