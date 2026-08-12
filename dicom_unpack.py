@@ -6,11 +6,10 @@ import numpy as np
 from chris_plugin import chris_plugin, PathMapper
 import pydicom as dicom
 import os
-from pflog import pflog
-from pftag import pftag
+import tempfile
 from    jobController       import jobber
 
-__version__ = '1.3.3'
+__version__ = '1.3.4'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -31,11 +30,6 @@ parser.add_argument('-t', '--outputType', default='dcm', type=str,
                     help='output file type')
 parser.add_argument('-V', '--version', action='version',
                     version=f'%(prog)s {__version__}')
-parser.add_argument(  '--pftelDB',
-                    dest        = 'pftelDB',
-                    default     = '',
-                    type        = str,
-                    help        = 'optional pftel server DB path')
 
 
 # The main function of this *ChRIS* plugin is denoted by this ``@chris_plugin`` "decorator."
@@ -49,10 +43,6 @@ parser.add_argument(  '--pftelDB',
     min_memory_limit='8Gi',  # supported units: Mi, Gi
     min_cpu_limit='2000m',  # millicores, e.g. "1000m" = 1 CPU core
     min_gpu_limit=0  # set min_gpu_limit=1 to enable GPU
-)
-@pflog.tel_logTime(
-            event       = 'dicom_unpack',
-            log         = 'Unpack dicom slices from a single multiframe dicom'
 )
 def main(options: Namespace, inputdir: Path, outputdir: Path):
     """
@@ -80,6 +70,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
         if dicom_file is None:
             continue
         split_dicom_multiframe(dicom_file, output_file)
+        del dicom_file  # release the pydicom Dataset (and its PixelData buffer)
 
 if __name__ == '__main__':
     main()
@@ -92,15 +83,30 @@ def split_dicom_multiframe(dicom_data_set, output_file):
     dir_path = str(output_file).replace('.dcm', '')
     print(f"Creating o/p directory: {dir_path}")
     os.makedirs(dir_path, exist_ok=True)
-    for i, slice in enumerate(dicom_data_set.pixel_array):
-        dicom_data_set.PixelData = slice.tobytes()
-        # specifically handle compressed dicoms with YBR_FULL_422 PI
-        if "YBR_FULL_422" in dicom_data_set.PhotometricInterpretation:
-            dicom_data_set.PhotometricInterpretation = "YBR_FULL"
-        dicom_data_set.NumberOfFrames = 1
+
+    rows = dicom_data_set.Rows
+    cols = dicom_data_set.Columns
+    bits_allocated = dicom_data_set.BitsAllocated
+    samples_per_pixel = getattr(dicom_data_set, 'SamplesPerPixel', 1)
+    bytes_per_pixel = bits_allocated // 8
+    frame_size = rows * cols * bytes_per_pixel * samples_per_pixel
+
+    num_frames = int(getattr(dicom_data_set, 'NumberOfFrames', 1))
+    raw = dicom_data_set.PixelData  # single buffer, no per-frame copy yet
+
+    if "YBR_FULL_422" in dicom_data_set.PhotometricInterpretation:
+        dicom_data_set.PhotometricInterpretation = "YBR_FULL"
+    dicom_data_set.NumberOfFrames = 1
+
+    for i in range(num_frames):
+        start = i * frame_size
+        end = start + frame_size
+        dicom_data_set.PixelData = raw[start:end]  # slice, not a decode
         op_dcm_path = os.path.join(dir_path, f'slice_{i:03n}.dcm')
         print(f"Saving file : -->slice_{i:03n}.dcm<--")
         dicom_data_set.save_as(op_dcm_path)
+
+    del raw
 
 def read_dicom(dicom_path:str):
     """
@@ -113,25 +119,27 @@ def read_dicom(dicom_path:str):
         dataset = dicom.dcmread(tmp_decompressed_path)
     except Exception as ex:
         print(tmp_decompressed_path, ex)
+    finally:
+        if os.path.exists(tmp_decompressed_path):
+            os.remove(tmp_decompressed_path)
     return dataset
 
 def decompress_dicom(dicom_path: str):
     """
     Decompress a DICOM file using `dcmdjpeg` command found in `dcmtk` library
     """
-    tmp_path = f"/tmp/decompressed.dcm"
-    print(f"Decompressing DICOM as {tmp_path}")
-    shell = jobber({'verbosity': 1, 'noJobLogging': True})
-    str_cmd = (f"dcmdjpeg"
-               f" {dicom_path}"
-               f" {tmp_path}")
-
-    d_response = shell.job_run(str_cmd)
-    print(f"Command: {d_response['cmd']}")
-    if d_response['returncode']:
-        print(f"Error: {d_response['stderr']}")
-        raise Exception(d_response["stderr"])
-    else:
+    fd, tmp_path = tempfile.mkstemp(suffix='.dcm')
+    os.close(fd)
+    try:
+        shell = jobber({'verbosity': 1, 'noJobLogging': True})
+        str_cmd = f"dcmdjpeg {dicom_path} {tmp_path}"
+        d_response = shell.job_run(str_cmd)
+        print(f"Command: {d_response['cmd']}")
+        if d_response['returncode']:
+            print(f"Error: {d_response['stderr']}")
+            raise Exception(d_response["stderr"])
         print("Response: File decompressed successfully.")
-
-    return tmp_path
+        return tmp_path
+    except Exception:
+        os.remove(tmp_path)
+        raise
