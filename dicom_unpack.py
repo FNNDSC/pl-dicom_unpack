@@ -7,9 +7,10 @@ from chris_plugin import chris_plugin, PathMapper
 import pydicom as dicom
 import os
 import tempfile
+import shlex
 from    jobController       import jobber
 
-__version__ = '1.3.4'
+__version__ = '1.3.5'
 
 DISPLAY_TITLE = r"""
        _           _ _                                                   _    
@@ -65,12 +66,24 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     # adding a progress bar and parallelism.
 
     mapper = PathMapper.file_mapper(inputdir, outputdir, glob=f"**/*.{options.fileFilter}",fail_if_empty=False)
+    skipped = []
     for input_file, output_file in mapper:
         dicom_file = read_dicom(str(input_file))
         if dicom_file is None:
+            skipped.append(str(input_file))
             continue
-        split_dicom_multiframe(dicom_file, output_file)
-        del dicom_file  # release the pydicom Dataset (and its PixelData buffer)
+        try:
+            split_dicom_multiframe(dicom_file, output_file)
+        except Exception as ex:
+            print(f"WARNING: Skipping -->{input_file}<-- (could not unpack: {ex})")
+            skipped.append(str(input_file))
+        finally:
+            del dicom_file  # release the pydicom Dataset (and its PixelData buffer)
+
+    if skipped:
+        print(f"\nSkipped {len(skipped)} malformed/unreadable file(s):")
+        for path in skipped:
+            print(f"  - {path}")
 
 if __name__ == '__main__':
     main()
@@ -110,15 +123,21 @@ def split_dicom_multiframe(dicom_data_set, output_file):
 
 def read_dicom(dicom_path:str):
     """
-    A method to read a dicom file and return the dicom dataset
+    A method to read a dicom file and return the dicom dataset.
+    Returns None if the file is malformed or cannot be decompressed/read,
+    so the caller can skip it instead of aborting the whole run.
     """
     print(f"Reading dicom file : -->{dicom_path}<--")
     dataset = None
-    tmp_decompressed_path = decompress_dicom(dicom_path)
+    try:
+        tmp_decompressed_path = decompress_dicom(dicom_path)
+    except Exception as ex:
+        print(f"WARNING: Skipping -->{dicom_path}<-- (decompression failed: {str(ex).strip()})")
+        return None
     try:
         dataset = dicom.dcmread(tmp_decompressed_path)
     except Exception as ex:
-        print(tmp_decompressed_path, ex)
+        print(f"WARNING: Skipping -->{dicom_path}<-- (could not read DICOM: {ex})")
     finally:
         if os.path.exists(tmp_decompressed_path):
             os.remove(tmp_decompressed_path)
@@ -132,7 +151,7 @@ def decompress_dicom(dicom_path: str):
     os.close(fd)
     try:
         shell = jobber({'verbosity': 1, 'noJobLogging': True})
-        str_cmd = f"dcmdjpeg {dicom_path} {tmp_path}"
+        str_cmd = f"dcmdjpeg {shlex.quote(dicom_path)} {shlex.quote(tmp_path)}"
         d_response = shell.job_run(str_cmd)
         print(f"Command: {d_response['cmd']}")
         if d_response['returncode']:
